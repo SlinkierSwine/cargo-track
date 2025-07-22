@@ -35,7 +35,7 @@
 Все сервисы - это отдельные приложения, со своими dockerfile, docker-compose, своя база данных и тп.
 Должен быть один модуль shared, в котором будет все общее (например BaseUseCase, BaseApplication, Publisher, Subscriber и тп)
 
-2. Нужно использовать python, fastapi, asyncio, fastapi-admin, postgresql, structlog.
+2. Нужно использовать python, fastapi, sync, fastapi-admin, postgresql, structlog.
 Для связи между сервисами можно использовать rest, rabbitmq (event-driven).
 
 3. Использовать clean architecture, event-driven architecture, обязательно использовать test driven development!

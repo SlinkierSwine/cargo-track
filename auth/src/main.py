@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import structlog
 
 from config import get_settings, setup_logging
+from config.database import create_tables
+from controllers import auth_controller, user_controller
 
 settings = get_settings()
 
@@ -23,14 +25,19 @@ app.add_middleware(
 setup_logging(settings.log_level)
 logger = structlog.get_logger()
 
+app.include_router(auth_controller.router)
+app.include_router(user_controller.router)
+
 @app.on_event("startup")
-async def startup_event():
+def startup_event():
     logger.info("Auth service starting up")
+    create_tables()
+    logger.info("Database tables created")
 
 @app.on_event("shutdown")
-async def shutdown_event():
+def shutdown_event():
     logger.info("Auth service shutting down")
 
 @app.get("/health")
-async def health_check():
+def health_check():
     return {"status": "healthy", "service": "auth"} 

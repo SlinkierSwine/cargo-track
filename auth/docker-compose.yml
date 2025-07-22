@@ -6,7 +6,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://auth_user:auth_password@auth-db:5432/auth_db
+      - DATABASE_URL=postgresql://user:password@auth-db:5432/auth_db
       - SECRET_KEY=your-secret-key-here
       - LOG_LEVEL=INFO
     depends_on:
@@ -14,25 +14,18 @@ services:
     volumes:
       - .:/app
       - ../shared:/app/shared
-    networks:
-      - auth-network
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
   auth-db:
     image: postgres:15
     environment:
       - POSTGRES_DB=auth_db
-      - POSTGRES_USER=auth_user
-      - POSTGRES_PASSWORD=auth_password
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
     ports:
       - "5432:5432"
     volumes:
       - auth_postgres_data:/var/lib/postgresql/data
-    networks:
-      - auth-network
 
 volumes:
-  auth_postgres_data:
-
-networks:
-  auth-network:
-    driver: bridge 
+  auth_postgres_data: 
