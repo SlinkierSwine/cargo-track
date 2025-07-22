@@ -3,8 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import structlog
 
 from config import get_settings, setup_logging
-from config.database import create_tables
+from config.database import create_tables, engine
 from controllers import auth_controller, user_controller
+from admin import setup_admin
 
 settings = get_settings()
 
@@ -32,7 +33,9 @@ app.include_router(user_controller.router)
 def startup_event():
     logger.info("Auth service starting up")
     create_tables()
+    setup_admin(app, engine)
     logger.info("Database tables created")
+    logger.info("Admin panel setup complete")
 
 @app.on_event("shutdown")
 def shutdown_event():
