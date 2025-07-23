@@ -1,36 +1,37 @@
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from .config.database import Base, get_db
-from .main import app
-
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+from config.database import SessionLocal
+from entities.database_models import Base
+from repositories.vehicle_repository import VehicleRepository
+from repositories.driver_repository import DriverRepository
 
 
-def override_get_db():
+@pytest.fixture
+def f_db_session() -> Session:
+    session = SessionLocal()
     try:
-        db = TestingSessionLocal()
-        yield db
+        yield session
     finally:
-        db.close()
+        session.close()
 
 
 @pytest.fixture
-def f_db():
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
+def f_vehicle_repository(f_db_session: Session) -> VehicleRepository:
+    return VehicleRepository(f_db_session)
 
 
 @pytest.fixture
-def f_client(f_db):
-    app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as client:
-        yield client
-    app.dependency_overrides.clear() 
+def f_driver_repository(f_db_session: Session) -> DriverRepository:
+    return DriverRepository(f_db_session)
+
+
+@pytest.fixture(autouse=True)
+def f_clean_db(f_db_session: Session) -> None:
+    """Clean database before each test"""
+    try:
+        f_db_session.execute(text("TRUNCATE TABLE vehicles, drivers RESTART IDENTITY CASCADE"))
+        f_db_session.commit()
+    except Exception:
+        # If tables don't exist yet, ignore the error
+        pass 

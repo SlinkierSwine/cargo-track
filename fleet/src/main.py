@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config.settings import get_settings
 from config.logging import setup_logging
+from config.database import create_tables
 import structlog
 
 settings = get_settings()
@@ -26,6 +27,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     logger.info("Fleet service starting up")
+    create_tables()
 
 
 @app.on_event("shutdown")

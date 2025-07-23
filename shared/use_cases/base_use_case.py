@@ -10,5 +10,5 @@ class BaseUseCase(ABC, Generic[T]):
         self.logger = structlog.get_logger(self.__class__.__name__)
     
     @abstractmethod
-    async def execute(self, *args: Any, **kwargs: Any) -> T:
+    def execute(self, *args: Any, **kwargs: Any) -> T:
         pass 

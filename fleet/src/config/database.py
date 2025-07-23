@@ -1,20 +1,29 @@
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from typing import Generator
-from .settings import get_settings
+from sqlalchemy.orm import sessionmaker, Session
+from config import get_settings
 
 settings = get_settings()
 
-engine = create_engine(settings.database_url)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine = create_engine(
+    settings.database_url,
+    echo=settings.debug
+)
 
-Base = declarative_base()
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
 
 
-def get_db() -> Generator:
+def get_db() -> Session:
     db = SessionLocal()
     try:
         yield db
     finally:
-        db.close() 
+        db.close()
+
+
+def create_tables():
+    from entities.database_models import Base
+    Base.metadata.create_all(bind=engine) 
