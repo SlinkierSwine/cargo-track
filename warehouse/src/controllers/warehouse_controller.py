@@ -127,7 +127,8 @@ def get_warehouse(
 def update_warehouse(
     warehouse_id: str,
     warehouse_update: WarehouseUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_any_role(["admin", "dispatcher"]))
 ):
     warehouse_repository = WarehouseRepository(db)
     updated_warehouse = warehouse_repository.update(warehouse_id, warehouse_update)
@@ -164,7 +165,8 @@ def update_warehouse(
 @router.delete("/{warehouse_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_warehouse(
     warehouse_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_any_role(["admin"]))
 ):
     warehouse_repository = WarehouseRepository(db)
     success = warehouse_repository.delete(warehouse_id)

@@ -138,7 +138,8 @@ def get_cargo(
 @router.get("/tracking/{tracking_number}", response_model=CargoResponse)
 def get_cargo_by_tracking(
     tracking_number: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user())
 ):
     cargo_repository = CargoRepository(db)
     cargo = cargo_repository.get_by_tracking_number(tracking_number)
@@ -179,7 +180,8 @@ def get_cargo_by_tracking(
 @router.get("/warehouse/{warehouse_id}", response_model=List[CargoResponse])
 def list_cargo_by_warehouse(
     warehouse_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user())
 ):
     cargo_repository = CargoRepository(db)
     cargos = cargo_repository.get_by_warehouse_id(warehouse_id)
@@ -218,7 +220,8 @@ def list_cargo_by_warehouse(
 def update_cargo(
     cargo_id: str,
     cargo_update: CargoUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_any_role(["admin", "dispatcher"]))
 ):
     cargo_repository = CargoRepository(db)
     updated_cargo = cargo_repository.update(cargo_id, cargo_update)
@@ -259,7 +262,8 @@ def update_cargo(
 @router.delete("/{cargo_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_cargo(
     cargo_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_any_role(["admin"]))
 ):
     cargo_repository = CargoRepository(db)
     success = cargo_repository.delete(cargo_id)
