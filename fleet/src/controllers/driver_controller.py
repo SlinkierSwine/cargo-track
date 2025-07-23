@@ -7,6 +7,7 @@ from config.database import get_db
 from entities.driver import Driver, DriverCreate, DriverUpdate
 from use_cases.create_driver_use_case import CreateDriverUseCase
 from repositories.driver_repository import DriverRepository
+from utils.auth_utils import get_current_user, require_any_role
 
 
 router = APIRouter(prefix="/drivers", tags=["drivers"])
@@ -23,7 +24,8 @@ def get_create_driver_use_case(driver_repository: DriverRepository = Depends(get
 @router.post("/", response_model=Driver, status_code=status.HTTP_201_CREATED)
 async def create_driver(
     driver_data: DriverCreate,
-    use_case: CreateDriverUseCase = Depends(get_create_driver_use_case)
+    use_case: CreateDriverUseCase = Depends(get_create_driver_use_case),
+    current_user: dict = Depends(require_any_role(["admin", "dispatcher"]))
 ):
     try:
         result = use_case.execute(driver_data)
@@ -36,7 +38,8 @@ async def create_driver(
 
 @router.get("/", response_model=List[Driver])
 async def get_all_drivers(
-    driver_repository: DriverRepository = Depends(get_driver_repository)
+    driver_repository: DriverRepository = Depends(get_driver_repository),
+    current_user: dict = Depends(get_current_user)
 ):
     try:
         return driver_repository.get_all()
@@ -47,7 +50,8 @@ async def get_all_drivers(
 @router.get("/{driver_id}", response_model=Driver)
 async def get_driver_by_id(
     driver_id: UUID,
-    driver_repository: DriverRepository = Depends(get_driver_repository)
+    driver_repository: DriverRepository = Depends(get_driver_repository),
+    current_user: dict = Depends(get_current_user)
 ):
     try:
         driver = driver_repository.get_by_id(driver_id)
@@ -64,7 +68,8 @@ async def get_driver_by_id(
 async def update_driver(
     driver_id: UUID,
     driver_data: DriverUpdate,
-    driver_repository: DriverRepository = Depends(get_driver_repository)
+    driver_repository: DriverRepository = Depends(get_driver_repository),
+    current_user: dict = Depends(require_any_role(["admin", "dispatcher"]))
 ):
     try:
         driver = driver_repository.update(driver_id, driver_data)
@@ -80,7 +85,8 @@ async def update_driver(
 @router.delete("/{driver_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_driver(
     driver_id: UUID,
-    driver_repository: DriverRepository = Depends(get_driver_repository)
+    driver_repository: DriverRepository = Depends(get_driver_repository),
+    current_user: dict = Depends(require_any_role(["admin"]))
 ):
     try:
         success = driver_repository.delete(driver_id)

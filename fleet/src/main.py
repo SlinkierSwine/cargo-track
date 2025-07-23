@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqladmin import Admin, ModelView
 from config.settings import get_settings
@@ -8,6 +8,7 @@ from controllers.vehicle_controller import router as vehicle_router
 from controllers.driver_controller import router as driver_router
 from controllers.route_assignment_controller import router as route_assignment_router
 from entities.database_models import Vehicle, Driver, RouteAssignment
+from utils.admin_auth import get_admin_auth
 import structlog
 
 settings = get_settings()
@@ -33,8 +34,8 @@ app.include_router(vehicle_router)
 app.include_router(driver_router)
 app.include_router(route_assignment_router)
 
-# Setup admin panel
-admin = Admin(app, engine)
+# Setup admin panel with authentication
+admin = Admin(app, engine, authentication_backend=get_admin_auth())
 
 # Register admin views
 class VehicleAdmin(ModelView, model=Vehicle):
@@ -48,6 +49,11 @@ class VehicleAdmin(ModelView, model=Vehicle):
     can_edit = True
     can_delete = True
     can_view_details = True
+    
+    def is_accessible(self, request: Request) -> bool:
+        # Проверяем, что пользователь аутентифицирован и имеет роль admin
+        user_role = request.session.get("role")
+        return user_role == "admin"
 
 
 class DriverAdmin(ModelView, model=Driver):
@@ -61,6 +67,11 @@ class DriverAdmin(ModelView, model=Driver):
     can_edit = True
     can_delete = True
     can_view_details = True
+    
+    def is_accessible(self, request: Request) -> bool:
+        # Проверяем, что пользователь аутентифицирован и имеет роль admin
+        user_role = request.session.get("role")
+        return user_role == "admin"
 
 
 class RouteAssignmentAdmin(ModelView, model=RouteAssignment):
@@ -74,6 +85,11 @@ class RouteAssignmentAdmin(ModelView, model=RouteAssignment):
     can_edit = True
     can_delete = True
     can_view_details = True
+    
+    def is_accessible(self, request: Request) -> bool:
+        # Проверяем, что пользователь аутентифицирован и имеет роль admin
+        user_role = request.session.get("role")
+        return user_role == "admin"
 
 
 admin.add_view(VehicleAdmin)
@@ -99,4 +115,16 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "fleet"} 
+    return {"status": "healthy", "service": "fleet"}
+
+
+@app.get("/admin-login")
+async def admin_login_page():
+    """Кастомная страница входа в админ-панель"""
+    from pathlib import Path
+    template_path = Path(__file__).parent / "templates" / "admin_login.html"
+    with open(template_path, "r") as f:
+        html_content = f.read()
+    
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=html_content) 

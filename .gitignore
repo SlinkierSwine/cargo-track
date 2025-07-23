@@ -211,3 +211,8 @@ __marimo__/
 
 
 plan.md
+main_functionality.py
+.cursor
+
+# Pytest
+.pytest_cache/
