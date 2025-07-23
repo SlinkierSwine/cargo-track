@@ -6,6 +6,12 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from config.settings import get_settings
 from fastapi import Depends
 import httpx
+from shared.utils.auth_utils import (
+    get_current_user as shared_get_current_user,
+    require_role as shared_require_role,
+    require_any_role as shared_require_any_role,
+    AuthServiceClient as SharedAuthServiceClient
+)
 
 settings = get_settings()
 security = HTTPBearer()
@@ -46,43 +52,16 @@ async def get_user_from_auth_service(user_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
-    token = credentials.credentials
-    payload = verify_token(token)
-    if payload is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    # Для простоты тестирования, если роль не указана в токене, 
-    # считаем пользователя админом
-    if "role" not in payload:
-        payload["role"] = "admin"
-    
-    return payload
-
+# Создаем функции с настройками fleet сервиса
+def get_current_user():
+    return shared_get_current_user(settings.secret_key, settings.algorithm)
 
 def require_role(required_role: str):
-    def role_checker(current_user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
-        user_role = current_user.get("role")
-        if user_role != required_role:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Access denied. Required role: {required_role}"
-            )
-        return current_user
-    return role_checker
-
+    return shared_require_role(required_role, settings.secret_key, settings.algorithm)
 
 def require_any_role(required_roles: list[str]):
-    def role_checker(current_user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
-        user_role = current_user.get("role")
-        if user_role not in required_roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Access denied. Required roles: {', '.join(required_roles)}"
-            )
-        return current_user
-    return role_checker 
+    return shared_require_any_role(required_roles, settings.secret_key, settings.algorithm)
+
+# Создаем клиент для auth сервиса
+def get_auth_service_client() -> SharedAuthServiceClient:
+    return SharedAuthServiceClient(settings.auth_service_url) 

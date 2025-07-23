@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from datetime import datetime
+from pydantic import ValidationError
 from entities.warehouse import Warehouse, WarehouseType, WarehouseStatus, WarehouseCreate
 from use_cases.create_warehouse_use_case import CreateWarehouseUseCase, CreateWarehouseRequest
 
@@ -119,30 +120,23 @@ def test_create_warehouse_name_already_exists(f_create_warehouse_use_case, m_war
 
 
 def test_create_warehouse_invalid_capacity(f_create_warehouse_use_case, m_warehouse_repository):
-    # Create request with invalid capacity
-    invalid_request = CreateWarehouseRequest(
-        name="Invalid Warehouse",
-        warehouse_type=WarehouseType.GENERAL_WAREHOUSE,
-        address="Test Address",
-        city="Test City",
-        country="Russia",
-        postal_code="123456",
-        phone="+7-495-123-45-67",
-        email="test@example.com",
-        total_capacity_weight=-1000.0,  # Invalid negative weight
-        total_capacity_volume=500.0,
-        temperature_controlled=False,
-        hazardous_materials_allowed=False,
-        operating_hours="24/7"
-    )
-    
-    # Execute and expect exception
-    with pytest.raises(ValueError, match="Capacity values must be positive"):
-        f_create_warehouse_use_case.execute(invalid_request)
-    
-    # Verify repository calls
-    m_warehouse_repository.get_by_name.assert_not_called()
-    m_warehouse_repository.create.assert_not_called()
+    # Create request with invalid capacity - should fail validation
+    with pytest.raises(ValidationError):
+        invalid_request = CreateWarehouseRequest(
+            name="Invalid Warehouse",
+            warehouse_type=WarehouseType.GENERAL_WAREHOUSE,
+            address="Test Address",
+            city="Test City",
+            country="Russia",
+            postal_code="123456",
+            phone="+7-495-123-45-67",
+            email="test@example.com",
+            total_capacity_weight=-1000.0,  # Invalid negative weight
+            total_capacity_volume=500.0,
+            temperature_controlled=False,
+            hazardous_materials_allowed=False,
+            operating_hours="24/7"
+        )
 
 
 def test_create_warehouse_hazardous_materials_without_certification(f_create_warehouse_use_case, m_warehouse_repository):

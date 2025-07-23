@@ -38,7 +38,9 @@ def list_users(
             role=user.role,
             is_active=user.is_active,
             first_name=user.first_name,
-            last_name=user.last_name
+            last_name=user.last_name,
+            created_at=user.created_at,
+            updated_at=user.updated_at
         ) for user in users
     ]
 
@@ -64,7 +66,9 @@ def get_user(
         role=user.role,
         is_active=user.is_active,
         first_name=user.first_name,
-        last_name=user.last_name
+        last_name=user.last_name,
+        created_at=user.created_at,
+        updated_at=user.updated_at
     )
 
 
@@ -91,7 +95,9 @@ def update_user(
         role=user.role,
         is_active=user.is_active,
         first_name=user.first_name,
-        last_name=user.last_name
+        last_name=user.last_name,
+        created_at=user.created_at,
+        updated_at=user.updated_at
     )
 
 

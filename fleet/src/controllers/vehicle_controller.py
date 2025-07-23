@@ -40,7 +40,7 @@ async def create_vehicle(
 @router.get("/", response_model=List[Vehicle])
 async def get_all_vehicles(
     vehicle_repository: VehicleRepository = Depends(get_vehicle_repository),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user())
 ):
     try:
         return vehicle_repository.get_all()
@@ -52,7 +52,7 @@ async def get_all_vehicles(
 async def get_vehicle_by_id(
     vehicle_id: UUID,
     vehicle_repository: VehicleRepository = Depends(get_vehicle_repository),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user())
 ):
     try:
         vehicle = vehicle_repository.get_by_id(vehicle_id)
@@ -103,7 +103,7 @@ async def delete_vehicle(
 async def get_vehicle_by_license_plate(
     license_plate: str,
     vehicle_repository: VehicleRepository = Depends(get_vehicle_repository),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user())
 ):
     try:
         vehicle = vehicle_repository.get_by_license_plate(license_plate)
@@ -120,7 +120,7 @@ async def get_vehicle_by_license_plate(
 async def get_vehicles_by_status(
     status: str,
     vehicle_repository: VehicleRepository = Depends(get_vehicle_repository),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user())
 ):
     try:
         return vehicle_repository.get_by_status(status)

@@ -7,12 +7,13 @@ services:
       - "8002:8000"
     environment:
       - DATABASE_URL=postgresql://warehouse_user:warehouse_password@warehouse-db:5432/warehouse_db
-      - SECRET_KEY=warehouse-secret-key-change-in-production
+      - SECRET_KEY=your-secret-key-here
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
       - LOG_LEVEL=INFO
       - APP_NAME=Warehouse Service
       - DEBUG=true
+      - DOCKER_ENV=true
     depends_on:
       - warehouse-db
     volumes:
@@ -20,6 +21,7 @@ services:
       - ../shared:/app/src/shared
     networks:
       - warehouse-network
+      - cargo-track-network
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
   warehouse-db:
@@ -34,10 +36,13 @@ services:
       - warehouse_postgres_data:/var/lib/postgresql/data
     networks:
       - warehouse-network
+      - cargo-track-network
 
 volumes:
   warehouse_postgres_data:
 
 networks:
   warehouse-network:
-    driver: bridge 
+    driver: bridge
+  cargo-track-network:
+    external: true 

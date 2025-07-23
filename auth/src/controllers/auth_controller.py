@@ -3,10 +3,16 @@ from sqlalchemy.orm import Session
 
 from entities.user import UserCreate, UserResponse
 from entities.token import Token
+from pydantic import BaseModel
 from use_cases.register_user_use_case import RegisterUserUseCase, RegisterUserRequest
 from use_cases.authenticate_user_use_case import AuthenticateUserUseCase, AuthenticateUserRequest
 from repositories.user_repository import UserRepository
 from config.database import get_db
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -47,15 +53,14 @@ def register_user(
 
 @router.post("/login", response_model=Token)
 def login_user(
-    email: str,
-    password: str,
+    login_data: LoginRequest,
     db: Session = Depends(get_db)
 ):
     user_repository = UserRepository(db)
     authenticate_use_case = AuthenticateUserUseCase(user_repository)
     
     try:
-        request = AuthenticateUserRequest(email=email, password=password)
+        request = AuthenticateUserRequest(email=login_data.email, password=login_data.password)
         response = authenticate_use_case.execute(request)
         return Token(
             access_token=response.access_token,

@@ -7,15 +7,18 @@ class Settings(BaseSettings):
     debug: bool = False
     
     # Database
-    database_url: str = "postgresql://user:password@localhost:5433/fleet_db"
+    database_url: str = "postgresql://fleet_user:fleet_password@fleet-db:5432/fleet_db"
     
-    # JWT
+    # JWT - используем тот же secret_key, что и auth сервис
     secret_key: str = "your-secret-key-here"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     
     # Logging
     log_level: str = "INFO"
+    
+    # Auth service
+    auth_service_url: str = "http://localhost:8000"
     
     class Config:
         env_file = ".env"

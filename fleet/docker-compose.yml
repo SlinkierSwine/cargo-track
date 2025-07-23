@@ -14,6 +14,8 @@ services:
     volumes:
       - .:/app
       - ../shared:/app/src/shared
+    networks:
+      - cargo-track-network
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
   fleet-db:
@@ -26,6 +28,12 @@ services:
       - "5433:5432"
     volumes:
       - fleet_postgres_data:/var/lib/postgresql/data
+    networks:
+      - cargo-track-network
 
 volumes:
-  fleet_postgres_data: 
+  fleet_postgres_data:
+
+networks:
+  cargo-track-network:
+    external: true 

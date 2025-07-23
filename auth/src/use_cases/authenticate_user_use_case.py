@@ -31,7 +31,12 @@ class AuthenticateUserUseCase:
         if not user.is_active:
             raise ValueError("User account is disabled")
         
-        access_token = create_access_token(data={"sub": str(user.id)})
+        # Включаем роль пользователя в токен
+        access_token = create_access_token(data={
+            "sub": str(user.id),
+            "email": user.email,
+            "role": user.role
+        })
         token = Token(access_token=access_token, token_type="bearer")
         
         return AuthenticateUserResponse(

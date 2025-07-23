@@ -39,7 +39,7 @@ async def create_driver(
 @router.get("/", response_model=List[Driver])
 async def get_all_drivers(
     driver_repository: DriverRepository = Depends(get_driver_repository),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user())
 ):
     try:
         return driver_repository.get_all()
@@ -51,7 +51,7 @@ async def get_all_drivers(
 async def get_driver_by_id(
     driver_id: UUID,
     driver_repository: DriverRepository = Depends(get_driver_repository),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user())
 ):
     try:
         driver = driver_repository.get_by_id(driver_id)

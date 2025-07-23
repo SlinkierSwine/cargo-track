@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from datetime import datetime, timedelta
+from pydantic import ValidationError
 from entities.cargo import Cargo, CargoType, CargoStatus, FragilityLevel, TemperatureRange, HumidityRange
 from use_cases.create_cargo_use_case import CreateCargoUseCase, CreateCargoRequest
 
@@ -122,30 +123,23 @@ def test_create_cargo_tracking_number_already_exists(f_create_cargo_use_case, m_
 
 
 def test_create_cargo_invalid_weight(f_create_cargo_use_case, m_cargo_repository):
-    # Create request with invalid weight
-    invalid_request = CreateCargoRequest(
-        tracking_number="CARGO-2024-002",
-        cargo_type=CargoType.GENERAL,
-        name="Invalid Cargo",
-        description="Invalid cargo",
-        weight=-100.0,  # Invalid negative weight
-        volume=1.0,
-        dimensions={"length": 1.0, "width": 1.0, "height": 1.0},
-        value=1000.0,
-        insurance_amount=1100.0,
-        hazardous_material=False,
-        special_handling=[],
-        fragility_level=FragilityLevel.LOW,
-        storage_duration=30
-    )
-    
-    # Execute and expect exception
-    with pytest.raises(ValueError, match="Weight and volume must be positive"):
-        f_create_cargo_use_case.execute(invalid_request)
-    
-    # Verify repository calls
-    m_cargo_repository.get_by_tracking_number.assert_not_called()
-    m_cargo_repository.create.assert_not_called()
+    # Create request with invalid weight - should fail validation
+    with pytest.raises(ValidationError):
+        invalid_request = CreateCargoRequest(
+            tracking_number="CARGO-2024-002",
+            cargo_type=CargoType.GENERAL,
+            name="Invalid Cargo",
+            description="Invalid cargo",
+            weight=-100.0,  # Invalid negative weight
+            volume=1.0,
+            dimensions={"length": 1.0, "width": 1.0, "height": 1.0},
+            value=1000.0,
+            insurance_amount=1100.0,
+            hazardous_material=False,
+            special_handling=[],
+            fragility_level=FragilityLevel.LOW,
+            storage_duration=30
+        )
 
 
 def test_create_hazardous_cargo_without_classification(f_create_cargo_use_case, m_cargo_repository):

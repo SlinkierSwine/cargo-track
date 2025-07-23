@@ -6,8 +6,8 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "postgresql://warehouse_user:warehouse_password@warehouse-db:5432/warehouse_db"
     
-    # JWT
-    secret_key: str = "warehouse-secret-key-change-in-production"
+    # JWT - используем тот же secret_key, что и auth сервис
+    secret_key: str = "your-secret-key-here"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     

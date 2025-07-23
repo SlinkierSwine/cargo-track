@@ -20,4 +20,6 @@ def get_db() -> Session:
 
 
 def create_tables():
+    # Import models to ensure they are registered with Base
+    from entities.database_models import Base
     Base.metadata.create_all(bind=engine) 

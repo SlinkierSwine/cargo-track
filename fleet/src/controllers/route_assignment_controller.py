@@ -60,7 +60,7 @@ async def assign_route(
 @router.get("/", response_model=List[RouteAssignment])
 async def get_all_route_assignments(
     route_assignment_repository: RouteAssignmentRepository = Depends(get_route_assignment_repository),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user())
 ):
     try:
         return route_assignment_repository.get_all()
@@ -72,7 +72,7 @@ async def get_all_route_assignments(
 async def get_route_assignment_by_id(
     assignment_id: UUID,
     route_assignment_repository: RouteAssignmentRepository = Depends(get_route_assignment_repository),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user())
 ):
     try:
         assignment = route_assignment_repository.get_by_id(assignment_id)

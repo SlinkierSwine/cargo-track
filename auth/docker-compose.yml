@@ -14,6 +14,8 @@ services:
     volumes:
       - .:/app
       - ./shared:/app/shared
+    networks:
+      - cargo-track-network
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
   auth-db:
@@ -26,6 +28,12 @@ services:
       - "5432:5432"
     volumes:
       - auth_postgres_data:/var/lib/postgresql/data
+    networks:
+      - cargo-track-network
 
 volumes:
-  auth_postgres_data: 
+  auth_postgres_data:
+
+networks:
+  cargo-track-network:
+    external: true 
