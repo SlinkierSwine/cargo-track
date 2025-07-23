@@ -17,6 +17,10 @@ class IVehicleRepository(ABC):
         pass
     
     @abstractmethod
+    def get_by_status(self, status: str) -> List[Vehicle]:
+        pass
+    
+    @abstractmethod
     def get_all(self) -> List[Vehicle]:
         pass
     

@@ -91,6 +91,29 @@ class VehicleRepository(IVehicleRepository):
             updated_at=db_vehicle.updated_at
         )
     
+    def get_by_status(self, status: str) -> List[Vehicle]:
+        db_vehicles = self.db_session.query(VehicleModel).filter(VehicleModel.status == status).all()
+        return [
+            Vehicle(
+                id=vehicle.id,
+                license_plate=vehicle.license_plate,
+                vehicle_type=vehicle.vehicle_type,
+                brand=vehicle.brand,
+                model=vehicle.model,
+                year=vehicle.year,
+                capacity_weight=vehicle.capacity_weight,
+                capacity_volume=vehicle.capacity_volume,
+                fuel_type=vehicle.fuel_type,
+                fuel_efficiency=vehicle.fuel_efficiency,
+                status=vehicle.status,
+                insurance_expiry=vehicle.insurance_expiry,
+                registration_expiry=vehicle.registration_expiry,
+                created_at=vehicle.created_at,
+                updated_at=vehicle.updated_at
+            )
+            for vehicle in db_vehicles
+        ]
+    
     def get_all(self) -> List[Vehicle]:
         db_vehicles = self.db_session.query(VehicleModel).all()
         return [
