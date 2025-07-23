@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  fleet-service:
+    build: .
+    ports:
+      - "8001:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@fleet-db:5432/fleet_db
+      - SECRET_KEY=your-secret-key-here
+      - LOG_LEVEL=INFO
+    depends_on:
+      - fleet-db
+    volumes:
+      - .:/app
+      - ../shared:/app/shared
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  fleet-db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=fleet_db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5433:5432"
+    volumes:
+      - fleet_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  fleet_postgres_data: 
