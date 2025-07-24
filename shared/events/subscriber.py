@@ -6,13 +6,18 @@ import structlog
 
 
 class Subscriber:
-    def __init__(self, host: str = "localhost", port: int = 5672, username: str = "guest", password: str = "guest") -> None:
+    def __init__(self, host: str, port: int, username: str, password: str, exchange: str, queue: str, routing_keys: list[str]):
         self.host = host
         self.port = port
         self.username = username
         self.password = password
+        self.exchange = exchange
+        self.queue = queue
+        self.routing_keys = routing_keys
         self.connection = None
         self.channel = None
+        self.consumer_tag = None
+        self._thread = None
         self.handlers: Dict[str, Callable[[Dict[str, Any]], None]] = {}
         self.is_listening = False
         self.logger = structlog.get_logger(self.__class__.__name__)
@@ -31,7 +36,7 @@ class Subscriber:
             
             # Declare exchange
             self.channel.exchange_declare(
-                exchange='cargo_track_events',
+                exchange=self.exchange,
                 exchange_type='topic',
                 durable=True
             )
@@ -59,7 +64,7 @@ class Subscriber:
             
             # Bind queue to exchange
             self.channel.queue_bind(
-                exchange='cargo_track_events',
+                exchange=self.exchange,
                 queue=queue_name,
                 routing_key=event_type
             )

@@ -5,11 +5,12 @@ import structlog
 
 
 class Publisher:
-    def __init__(self, host: str = "localhost", port: int = 5672, username: str = "guest", password: str = "guest") -> None:
+    def __init__(self, host: str, port: int, username: str, password: str, exchange: str):
         self.host = host
         self.port = port
         self.username = username
         self.password = password
+        self.exchange = exchange
         self.connection = None
         self.channel = None
         self.logger = structlog.get_logger(self.__class__.__name__)

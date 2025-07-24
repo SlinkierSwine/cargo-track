@@ -26,6 +26,13 @@ class Settings(BaseSettings):
     # Warehouse service
     warehouse_service_url: str = "http://localhost:8002"
     
+    # RabbitMQ
+    rabbitmq_host: str = "localhost"
+    rabbitmq_port: int = 5672
+    rabbitmq_user: str = "guest"
+    rabbitmq_password: str = "guest"
+    rabbitmq_exchange: str = "cargo_track_events"
+    
     class Config:
         env_file = ".env"
 

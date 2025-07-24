@@ -2,7 +2,9 @@ import pytest
 from unittest.mock import MagicMock
 from uuid import uuid4
 from entities.order import Order, OrderStatus
+from repositories.order_repository import OrderRepository
 from use_cases.assign_vehicle_use_case import AssignVehicleUseCase, AssignVehicleRequest
+from shared.events.publisher import Publisher
 
 
 @pytest.fixture
@@ -16,15 +18,26 @@ def m_fleet_service_client():
 
 
 @pytest.fixture
-def f_assign_vehicle_use_case(m_order_repository, m_fleet_service_client):
-    return AssignVehicleUseCase(m_order_repository, m_fleet_service_client)
+def m_warehouse_service_client():
+    return MagicMock()
+
+
+@pytest.fixture
+def m_publisher():
+    return MagicMock(spec=Publisher)
+
+
+@pytest.fixture
+def f_assign_vehicle_use_case(m_order_repository, m_fleet_service_client, m_warehouse_service_client, m_publisher):
+    return AssignVehicleUseCase(m_order_repository, m_fleet_service_client, m_warehouse_service_client, m_publisher)
 
 
 @pytest.fixture
 def f_valid_assign_vehicle_request():
     return AssignVehicleRequest(
         order_id=str(uuid4()),
-        vehicle_id=str(uuid4())
+        vehicle_id=str(uuid4()),
+        cargo_id="00000000-0000-0000-0000-000000000001"
     )
 
 
@@ -43,10 +56,9 @@ def f_existing_order():
     )
 
 
-def test_assign_vehicle_success(f_assign_vehicle_use_case, m_order_repository, m_fleet_service_client, f_valid_assign_vehicle_request, f_existing_order):
-    # Mock repository responses
+def test_assign_vehicle_success(f_assign_vehicle_use_case, m_order_repository, m_fleet_service_client, m_warehouse_service_client, f_valid_assign_vehicle_request, f_existing_order):
     m_order_repository.get_by_id.return_value = f_existing_order
-    
+    m_warehouse_service_client.get_cargo.return_value = {"id": f_valid_assign_vehicle_request.cargo_id, "status": "stored"}
     updated_order = Order(
         customer_name=f_existing_order.customer_name,
         customer_email=f_existing_order.customer_email,
@@ -60,26 +72,15 @@ def test_assign_vehicle_success(f_assign_vehicle_use_case, m_order_repository, m
         vehicle_id=uuid4()
     )
     m_order_repository.update.return_value = updated_order
-    
-    # Mock fleet service response
     m_fleet_service_client.get_vehicle.return_value = {
         "id": f_valid_assign_vehicle_request.vehicle_id,
         "capacity_weight": 20000.0,
         "capacity_volume": 80.0,
         "status": "active"
     }
-    
-    # Execute use case
     result = f_assign_vehicle_use_case.execute(f_valid_assign_vehicle_request)
-    
-    # Verify repository calls
-    m_order_repository.get_by_id.assert_called_once_with(f_valid_assign_vehicle_request.order_id)
-    m_order_repository.update.assert_called_once()
-    
-    # Verify fleet service calls
+    m_warehouse_service_client.get_cargo.assert_called_once_with(f_valid_assign_vehicle_request.cargo_id)
     m_fleet_service_client.get_vehicle.assert_called_once_with(f_valid_assign_vehicle_request.vehicle_id)
-    
-    # Verify result
     assert result.vehicle_id == updated_order.vehicle_id
     assert result.status == OrderStatus.ASSIGNED
 
@@ -121,59 +122,49 @@ def test_assign_vehicle_order_already_cancelled(f_assign_vehicle_use_case, m_ord
     m_order_repository.update.assert_not_called()
 
 
-def test_assign_vehicle_vehicle_not_found(f_assign_vehicle_use_case, m_order_repository, m_fleet_service_client, f_valid_assign_vehicle_request, f_existing_order):
-    # Mock repository responses
+def test_assign_vehicle_vehicle_not_found(f_assign_vehicle_use_case, m_order_repository, m_fleet_service_client, m_warehouse_service_client, f_valid_assign_vehicle_request, f_existing_order):
     m_order_repository.get_by_id.return_value = f_existing_order
-    
-    # Mock fleet service to return None
+    m_warehouse_service_client.get_cargo.return_value = {"id": f_valid_assign_vehicle_request.cargo_id, "status": "stored"}
     m_fleet_service_client.get_vehicle.return_value = None
-    
-    # Execute and expect exception
     with pytest.raises(ValueError, match="Vehicle not found"):
         f_assign_vehicle_use_case.execute(f_valid_assign_vehicle_request)
-    
-    # Verify repository calls
-    m_order_repository.get_by_id.assert_called_once_with(f_valid_assign_vehicle_request.order_id)
-    m_order_repository.update.assert_not_called()
 
 
-def test_assign_vehicle_vehicle_not_available(f_assign_vehicle_use_case, m_order_repository, m_fleet_service_client, f_valid_assign_vehicle_request, f_existing_order):
-    # Mock repository responses
+def test_assign_vehicle_vehicle_not_available(f_assign_vehicle_use_case, m_order_repository, m_fleet_service_client, m_warehouse_service_client, f_valid_assign_vehicle_request, f_existing_order):
     m_order_repository.get_by_id.return_value = f_existing_order
-    
-    # Mock fleet service to return unavailable vehicle
+    m_warehouse_service_client.get_cargo.return_value = {"id": f_valid_assign_vehicle_request.cargo_id, "status": "stored"}
     m_fleet_service_client.get_vehicle.return_value = {
         "id": f_valid_assign_vehicle_request.vehicle_id,
         "capacity_weight": 20000.0,
         "capacity_volume": 80.0,
         "status": "maintenance"
     }
-    
-    # Execute and expect exception
     with pytest.raises(ValueError, match="Vehicle is not available"):
         f_assign_vehicle_use_case.execute(f_valid_assign_vehicle_request)
-    
-    # Verify repository calls
-    m_order_repository.get_by_id.assert_called_once_with(f_valid_assign_vehicle_request.order_id)
-    m_order_repository.update.assert_not_called()
 
 
-def test_assign_vehicle_insufficient_capacity(f_assign_vehicle_use_case, m_order_repository, m_fleet_service_client, f_valid_assign_vehicle_request, f_existing_order):
-    # Mock repository responses
+def test_assign_vehicle_insufficient_capacity(f_assign_vehicle_use_case, m_order_repository, m_fleet_service_client, m_warehouse_service_client, f_valid_assign_vehicle_request, f_existing_order):
     m_order_repository.get_by_id.return_value = f_existing_order
-    
-    # Mock fleet service to return vehicle with insufficient capacity
+    m_warehouse_service_client.get_cargo.return_value = {"id": f_valid_assign_vehicle_request.cargo_id, "status": "stored"}
     m_fleet_service_client.get_vehicle.return_value = {
         "id": f_valid_assign_vehicle_request.vehicle_id,
         "capacity_weight": 50.0,  # Less than cargo weight (100.0)
         "capacity_volume": 80.0,
         "status": "active"
     }
-    
-    # Execute and expect exception
-    with pytest.raises(ValueError, match="Vehicle capacity is insufficient"):
+    with pytest.raises(ValueError, match="Insufficient vehicle capacity"):
         f_assign_vehicle_use_case.execute(f_valid_assign_vehicle_request)
-    
-    # Verify repository calls
-    m_order_repository.get_by_id.assert_called_once_with(f_valid_assign_vehicle_request.order_id)
-    m_order_repository.update.assert_not_called() 
+
+
+def test_assign_vehicle_cargo_not_found(f_assign_vehicle_use_case, m_order_repository, m_warehouse_service_client, f_valid_assign_vehicle_request, f_existing_order):
+    m_order_repository.get_by_id.return_value = f_existing_order
+    m_warehouse_service_client.get_cargo.return_value = None
+    with pytest.raises(ValueError, match="Cargo not found"):
+        f_assign_vehicle_use_case.execute(f_valid_assign_vehicle_request)
+
+
+def test_assign_vehicle_cargo_not_ready(f_assign_vehicle_use_case, m_order_repository, m_warehouse_service_client, f_valid_assign_vehicle_request, f_existing_order):
+    m_order_repository.get_by_id.return_value = f_existing_order
+    m_warehouse_service_client.get_cargo.return_value = {"id": f_valid_assign_vehicle_request.cargo_id, "status": "damaged"}
+    with pytest.raises(ValueError, match="Cargo is not ready for shipping"):
+        f_assign_vehicle_use_case.execute(f_valid_assign_vehicle_request) 

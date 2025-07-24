@@ -1,9 +1,14 @@
 import pytest
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from config.database import SessionLocal
+from config.database import SessionLocal, create_tables
 from entities.database_models import Base
 from repositories.order_repository import OrderRepository
+
+
+@pytest.fixture(scope="session", autouse=True)
+def f_create_tables():
+    create_tables()
 
 
 @pytest.fixture
