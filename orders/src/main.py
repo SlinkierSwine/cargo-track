@@ -8,6 +8,7 @@ import structlog
 from controllers.order_controller import router as order_router
 from entities.database_models import Order as OrderModel
 from shared.events.publisher import Publisher
+from utils.admin_auth import get_admin_auth
 
 settings = get_settings()
 setup_logging(settings.log_level)
@@ -39,8 +40,6 @@ app.add_middleware(
 
 app.include_router(order_router)
 
-admin = Admin(app, engine)
-
 class OrderAdmin(ModelView, model=OrderModel):
     name = "Order"
     name_plural = "Orders"
@@ -53,13 +52,24 @@ class OrderAdmin(ModelView, model=OrderModel):
     can_delete = True
     can_view_details = True
 
-admin.add_view(OrderAdmin)
+    def is_accessible(self, request: Request) -> bool:
+        # Проверяем, что пользователь аутентифицирован и имеет роль admin
+        user_role = request.session.get("role")
+        return user_role == "admin"
+
+def setup_admin(app, engine):
+    """Setup admin panel with authentication"""
+    admin = Admin(app, engine, authentication_backend=get_admin_auth())
+    admin.add_view(OrderAdmin)
+    return admin
 
 @app.on_event("startup")
-async def startup_event():
-    logger.info("Starting Orders Service")
+def startup_event():
+    logger.info("Orders service starting up")
     create_tables()
+    setup_admin(app, engine)
     logger.info("Database tables created")
+    logger.info("Admin panel setup complete")
 
 
 @app.on_event("shutdown")
