@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from config.database import SessionLocal
 from entities.database_models import Base
+from repositories.order_repository import OrderRepository
 
 
 @pytest.fixture
@@ -12,6 +13,11 @@ def f_db_session() -> Session:
         yield session
     finally:
         session.close()
+
+
+@pytest.fixture
+def f_order_repository(f_db_session: Session) -> OrderRepository:
+    return OrderRepository(f_db_session)
 
 
 @pytest.fixture(autouse=True)
