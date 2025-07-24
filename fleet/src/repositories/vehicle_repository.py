@@ -114,6 +114,10 @@ class VehicleRepository(IVehicleRepository):
             for vehicle in db_vehicles
         ]
     
+    def get_available_vehicles(self) -> List[Vehicle]:
+        """Get all vehicles with status 'active'"""
+        return self.get_by_status("active")
+    
     def get_all(self) -> List[Vehicle]:
         db_vehicles = self.db_session.query(VehicleModel).all()
         return [

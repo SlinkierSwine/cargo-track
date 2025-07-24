@@ -3,6 +3,9 @@ from typing import Optional
 
 
 class Settings(BaseSettings):
+    app_name: str = "Warehouse Service"
+    debug: bool = False
+    
     # Database
     database_url: str = "postgresql://warehouse_user:warehouse_password@warehouse-db:5432/warehouse_db"
     
@@ -14,18 +17,21 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
     
-    # Application
-    app_name: str = "Warehouse Service"
-    debug: bool = True
-    
     # Auth service
-    auth_service_url: str = "http://localhost:8000"
+    auth_service_url: str = "http://auth-service:8000"
+    
+    # RabbitMQ
+    rabbitmq_host: str = "rabbitmq"
+    rabbitmq_port: int = 5672
+    rabbitmq_user: str = "guest"
+    rabbitmq_password: str = "guest"
+    rabbitmq_exchange: str = "cargo_track_events"
     
     class Config:
         env_file = ".env"
 
 
-_settings = None
+_settings: Optional[Settings] = None
 
 
 def get_settings() -> Settings:

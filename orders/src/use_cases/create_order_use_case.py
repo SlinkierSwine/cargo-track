@@ -4,6 +4,7 @@ from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from utils.warehouse_service_client import WarehouseServiceClient
 from shared.events.publisher import Publisher
+from use_cases.order_event_service import OrderEventService
 
 class CreateOrderRequest(BaseModel):
     customer_name: str = Field(..., min_length=1, max_length=100)
@@ -18,9 +19,9 @@ class CreateOrderRequest(BaseModel):
     warehouse_id: Optional[str] = None
 
 class CreateOrderUseCase:
-    def __init__(self, order_repository: OrderRepository, publisher: Publisher, warehouse_service_client: Optional[WarehouseServiceClient] = None):
+    def __init__(self, order_repository: OrderRepository, order_event_service: OrderEventService, warehouse_service_client: Optional[WarehouseServiceClient] = None):
         self.order_repository = order_repository
-        self.publisher = publisher
+        self.order_event_service = order_event_service
         self.warehouse_service_client = warehouse_service_client or WarehouseServiceClient()
 
     def execute(self, request: CreateOrderRequest) -> Order:
@@ -51,6 +52,19 @@ class CreateOrderUseCase:
             notes=request.notes
         )
         order = self.order_repository.create(order_data)
-        # Event-driven: publish order.created
-        self.publisher.publish("order.created", {"order_id": str(order.id), "customer_email": order.customer_email})
+        
+        # Event-driven: publish OrderCreated event
+        order_dict = {
+            "id": str(order.id),
+            "customer_name": order.customer_name,
+            "customer_email": order.customer_email,
+            "pickup_address": order.pickup_address,
+            "delivery_address": order.delivery_address,
+            "cargo_type": order.cargo_type,
+            "cargo_weight": order.cargo_weight,
+            "cargo_volume": order.cargo_volume,
+            "notes": order.notes
+        }
+        self.order_event_service.publish_order_created(order_dict)
+        
         return order 

@@ -18,7 +18,14 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     
     # Auth service
-    auth_service_url: str = "http://localhost:8000"
+    auth_service_url: str = "http://auth-service:8000"
+    
+    # RabbitMQ
+    rabbitmq_host: str = "rabbitmq"
+    rabbitmq_port: int = 5672
+    rabbitmq_user: str = "guest"
+    rabbitmq_password: str = "guest"
+    rabbitmq_exchange: str = "cargo_track_events"
     
     class Config:
         env_file = ".env"

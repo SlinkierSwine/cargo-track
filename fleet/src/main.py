@@ -8,11 +8,34 @@ from controllers.vehicle_controller import router as vehicle_router
 from controllers.driver_controller import router as driver_router
 from controllers.route_assignment_controller import router as route_assignment_router
 from entities.database_models import Vehicle, Driver, RouteAssignment
+from shared.events.publisher import Publisher
+from shared.events.subscriber import Subscriber
+from use_cases.fleet_event_service import FleetEventService
+from repositories.driver_repository import DriverRepository
+from repositories.vehicle_repository import VehicleRepository
 from utils.admin_auth import get_admin_auth
 import structlog
 
 settings = get_settings()
 setup_logging(settings.log_level)
+
+publisher = Publisher(
+    host=settings.rabbitmq_host,
+    port=settings.rabbitmq_port,
+    username=settings.rabbitmq_user,
+    password=settings.rabbitmq_password,
+    exchange=settings.rabbitmq_exchange
+)
+
+subscriber = Subscriber(
+    host=settings.rabbitmq_host,
+    port=settings.rabbitmq_port,
+    username=settings.rabbitmq_user,
+    password=settings.rabbitmq_password,
+    exchange=settings.rabbitmq_exchange,
+    queue="fleet_queue",
+    routing_keys=["order_created"]
+)
 
 logger = structlog.get_logger()
 
@@ -20,6 +43,9 @@ app = FastAPI(
     title=settings.app_name,
     debug=settings.debug
 )
+
+app.state.publisher = publisher
+app.state.subscriber = subscriber
 
 app.add_middleware(
     CORSMiddleware,
@@ -101,11 +127,35 @@ admin.add_view(RouteAssignmentAdmin)
 async def startup_event():
     logger.info("Fleet service starting up")
     create_tables()
+    
+    # Initialize repositories
+    from sqlalchemy.orm import sessionmaker
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    db_session = SessionLocal()
+    
+    driver_repository = DriverRepository(db_session)
+    vehicle_repository = VehicleRepository(db_session)
+    
+    # Initialize and start event service
+    fleet_event_service = FleetEventService(publisher, subscriber, driver_repository, vehicle_repository)
+    app.state.fleet_event_service = fleet_event_service
+    
+    try:
+        fleet_event_service.start_listening()
+        logger.info("Fleet event service started successfully")
+    except Exception as e:
+        logger.error("Failed to start fleet event service", error=str(e))
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     logger.info("Fleet service shutting down")
+    try:
+        subscriber.disconnect()
+        publisher.disconnect()
+        logger.info("Fleet event service disconnected")
+    except Exception as e:
+        logger.error("Error disconnecting fleet event service", error=str(e))
 
 
 @app.get("/")

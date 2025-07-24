@@ -7,6 +7,11 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://user:password@auth-db:5432/auth_db
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+      - RABBITMQ_EXCHANGE=cargo_track_events
       - SECRET_KEY=your-secret-key-here
       - LOG_LEVEL=INFO
     depends_on:

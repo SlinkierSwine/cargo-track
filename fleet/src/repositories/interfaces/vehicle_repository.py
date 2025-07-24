@@ -21,6 +21,10 @@ class IVehicleRepository(ABC):
         pass
     
     @abstractmethod
+    def get_available_vehicles(self) -> List[Vehicle]:
+        pass
+    
+    @abstractmethod
     def get_all(self) -> List[Vehicle]:
         pass
     

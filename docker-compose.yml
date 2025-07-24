@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  # Common RabbitMQ for all services
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - cargo-track-network
+
+  # Auth Service
+  auth-service:
+    extends:
+      file: ./auth/docker-compose.yml
+      service: auth-service
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+    networks:
+      - cargo-track-network
+    depends_on:
+      - rabbitmq
+
+  auth-db:
+    extends:
+      file: ./auth/docker-compose.yml
+      service: auth-db
+    networks:
+      - cargo-track-network
+
+  # Fleet Service
+  fleet-service:
+    extends:
+      file: ./fleet/docker-compose.yml
+      service: fleet-service
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+    networks:
+      - cargo-track-network
+    depends_on:
+      - rabbitmq
+
+  fleet-db:
+    extends:
+      file: ./fleet/docker-compose.yml
+      service: fleet-db
+    networks:
+      - cargo-track-network
+
+  # Warehouse Service
+  warehouse-service:
+    extends:
+      file: ./warehouse/docker-compose.yml
+      service: warehouse-service
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+    networks:
+      - cargo-track-network
+    depends_on:
+      - rabbitmq
+
+  warehouse-db:
+    extends:
+      file: ./warehouse/docker-compose.yml
+      service: warehouse-db
+    networks:
+      - cargo-track-network
+
+  # Orders Service
+  orders-service:
+    extends:
+      file: ./orders/docker-compose.yml
+      service: orders-service
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+    networks:
+      - cargo-track-network
+    depends_on:
+      - rabbitmq
+
+  orders-db:
+    extends:
+      file: ./orders/docker-compose.yml
+      service: orders-db
+    networks:
+      - cargo-track-network
+
+networks:
+  cargo-track-network:
+    external: true
+
+volumes:
+  auth_postgres_data:
+  fleet_postgres_data:
+  warehouse_postgres_data:
+  orders_postgres_data:
+  rabbitmq_data: 

@@ -8,6 +8,10 @@ import structlog
 from controllers.order_controller import router as order_router
 from entities.database_models import Order as OrderModel
 from shared.events.publisher import Publisher
+from shared.events.subscriber import Subscriber
+from use_cases.order_event_service import OrderEventService
+from repositories.order_repository import OrderRepository
+from sqlalchemy.orm import sessionmaker
 from utils.admin_auth import get_admin_auth
 
 settings = get_settings()
@@ -21,6 +25,23 @@ publisher = Publisher(
     exchange=settings.rabbitmq_exchange
 )
 
+subscriber = Subscriber(
+    host=settings.rabbitmq_host,
+    port=settings.rabbitmq_port,
+    username=settings.rabbitmq_user,
+    password=settings.rabbitmq_password,
+    exchange=settings.rabbitmq_exchange,
+    queue="orders_queue",
+    routing_keys=["vehicle_assigned", "no_vehicle_available"]
+)
+
+# Create database session and repository
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+db_session = SessionLocal()
+order_repository = OrderRepository(db_session)
+
+order_event_service = OrderEventService(publisher, subscriber, order_repository)
+
 logger = structlog.get_logger()
 
 app = FastAPI(
@@ -29,6 +50,9 @@ app = FastAPI(
 )
 
 app.state.publisher = publisher
+app.state.subscriber = subscriber
+app.state.order_event_service = order_event_service
+app.state.order_repository = order_repository
 
 app.add_middleware(
     CORSMiddleware,
@@ -68,6 +92,14 @@ def startup_event():
     logger.info("Orders service starting up")
     create_tables()
     setup_admin(app, engine)
+    
+    # Start event service
+    try:
+        order_event_service.start_listening()
+        logger.info("Event service started successfully")
+    except Exception as e:
+        logger.error("Failed to start event service", error=str(e))
+    
     logger.info("Database tables created")
     logger.info("Admin panel setup complete")
 
@@ -75,6 +107,13 @@ def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     logger.info("Shutting down Orders Service")
+    try:
+        subscriber.disconnect()
+        publisher.disconnect()
+        db_session.close()
+        logger.info("Event service disconnected")
+    except Exception as e:
+        logger.error("Error disconnecting event service", error=str(e))
 
 
 @app.get("/")

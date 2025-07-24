@@ -125,4 +125,15 @@ async def get_vehicles_by_status(
     try:
         return vehicle_repository.get_by_status(status)
     except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
+
+
+@router.get("/available/", response_model=List[Vehicle])
+async def get_available_vehicles(
+    vehicle_repository: VehicleRepository = Depends(get_vehicle_repository),
+    current_user: dict = Depends(get_current_user())
+):
+    try:
+        return vehicle_repository.get_available_vehicles()
+    except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error") 

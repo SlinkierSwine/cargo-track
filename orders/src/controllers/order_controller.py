@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from use_cases.create_order_use_case import CreateOrderUseCase, CreateOrderRequest
 from use_cases.assign_vehicle_use_case import AssignVehicleUseCase, AssignVehicleRequest
 from use_cases.change_order_status_use_case import ChangeOrderStatusUseCase, ChangeOrderStatusRequest
+from use_cases.order_event_service import OrderEventService
 from utils.fleet_service_client import FleetServiceClient
 from utils.warehouse_service_client import WarehouseServiceClient
 from shared.events.publisher import Publisher
@@ -28,15 +29,18 @@ def get_warehouse_service_client() -> WarehouseServiceClient:
 def get_publisher(request: Request) -> Publisher:
     return request.app.state.publisher
 
+def get_order_event_service(request: Request) -> OrderEventService:
+    return request.app.state.order_event_service
+
 @router.post("/orders", response_model=Order, status_code=status.HTTP_201_CREATED)
 def create_order(
     request: dict, 
     repo: OrderRepository = Depends(get_order_repository), 
     warehouse_client: WarehouseServiceClient = Depends(get_warehouse_service_client), 
-    publisher: Publisher = Depends(get_publisher),
+    order_event_service: OrderEventService = Depends(get_order_event_service),
     current_user: dict = Depends(require_any_role(["admin", "dispatcher", "driver"]))
 ):
-    use_case = CreateOrderUseCase(repo, publisher, warehouse_client)
+    use_case = CreateOrderUseCase(repo, order_event_service, warehouse_client)
     try:
         return use_case.execute(CreateOrderRequest(**request))
     except ValueError as e:

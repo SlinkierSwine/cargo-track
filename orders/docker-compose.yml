@@ -16,12 +16,11 @@ services:
       - LOG_LEVEL=INFO
     depends_on:
       - orders-db
-      - rabbitmq
     volumes:
       - ./src:/app/src
       - ../shared:/app/src/shared
     networks:
-      - orders-network
+      - cargo-track-network
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
   orders-db:
@@ -35,25 +34,11 @@ services:
     volumes:
       - orders_postgres_data:/var/lib/postgresql/data
     networks:
-      - orders-network
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    ports:
-      - "5673:5672"
-      - "15673:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - orders-network
+      - cargo-track-network
 
 volumes:
   orders_postgres_data:
-  rabbitmq_data:
 
 networks:
-  orders-network:
-    driver: bridge 
+  cargo-track-network:
+    external: true 

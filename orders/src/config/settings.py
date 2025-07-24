@@ -18,16 +18,16 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     
     # Auth service
-    auth_service_url: str = "http://localhost:8000"
+    auth_service_url: str = "http://auth-service:8000"
     
     # Fleet service
-    fleet_service_url: str = "http://localhost:8001"
+    fleet_service_url: str = "http://fleet-service:8000"
     
     # Warehouse service
-    warehouse_service_url: str = "http://localhost:8002"
+    warehouse_service_url: str = "http://warehouse-service:8000"
     
     # RabbitMQ
-    rabbitmq_host: str = "localhost"
+    rabbitmq_host: str = "rabbitmq"
     rabbitmq_port: int = 5672
     rabbitmq_user: str = "guest"
     rabbitmq_password: str = "guest"
